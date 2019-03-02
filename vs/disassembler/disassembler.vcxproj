@@ -74,7 +74,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\src\Parser8080.cpp" />
     <ClCompile Include="Disassembler.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\inc\IParser.h" />
+    <ClInclude Include="..\..\inc\Parser8080.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
