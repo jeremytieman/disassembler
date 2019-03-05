@@ -50,6 +50,7 @@
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(SolutionDir)..\external\boost_1_69_0\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>$(SolutionDir)..\external\boost_1_69_0\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
@@ -65,6 +66,7 @@
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(SolutionDir)..\external\boost_1_69_0\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -74,12 +76,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\src\Parser8080.cpp" />
-    <ClCompile Include="Disassembler.cpp" />
+    <ClInclude Include="..\..\inc\Disassembler.h" />
+    <ClInclude Include="..\..\inc\Disassembler8080.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\inc\IParser.h" />
-    <ClInclude Include="..\..\inc\Parser8080.h" />
+    <ClCompile Include="..\..\src\Disassembler8080.cpp" />
+    <ClCompile Include="..\..\src\Main.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

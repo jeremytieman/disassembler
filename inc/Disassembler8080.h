@@ -1,13 +1,13 @@
 #pragma once
 
-#include "IParser.h"
+#include "Disassembler.h"
 
 namespace CodexMachina
 {
-	class Parser8080 : public IParser
+	class Disassembler8080 : public Disassembler
 	{
 	public:
-		Parser8080() { }
+		Disassembler8080() { }
 		void parse(const std::vector<unsigned char>& inputBuffer, std::ostream& outputStream);
 	}
 }
