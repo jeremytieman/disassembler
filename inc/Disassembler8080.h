@@ -8,6 +8,6 @@ namespace CodexMachina
 	{
 	public:
 		Disassembler8080() { }
-		void parse(const std::vector<unsigned char>& inputBuffer, std::ostream& outputStream);
-	}
+		void disassembleImpl();
+	};
 }

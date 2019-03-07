@@ -3,7 +3,9 @@
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
+#include <memory>
 #include <ostream>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -12,30 +14,80 @@ namespace CodexMachina
 	class Disassembler
 	{
 	public:
-		Disassembler(const std::string& filename) { }
+		Disassembler() { }
 
-		void parse(const std::string& filename)
+		void disassemble(const std::vector<std::string>& filenames)
 		{
-			std::filesystem::path path(filename);
-			std::ifstream ifstream(path, std::ios::binary);
-			parse(ifstream);
+			for (const auto& filename : filenames)
+			{
+				if (!std::filesystem::exists(filename))
+				{
+					std::string error(filename);
+					error.append(" does not exist");
+					throw new std::invalid_argument(error);
+				}
+			}
+
+			_curIndex = 0;
+			_eof = false;
+			_filenames = filenames;
+			std::unique_ptr<std::istream> istreamPtr(new std::ifstream(_filenames[_curIndex], std::ios::binary));
+			disassemble(istreamPtr);
 		}
 		
-		virtual void parse(const std::istream& istream) = 0;
+		void disassemble(std::unique_ptr<std::istream>& istreamPtr)
+		{
+			_istreamPtr = std::move(istreamPtr);
+		}
 
-	private:
-		std::vector<std::byte> nextBuffer(std::istream& istream)
+		virtual void disassembleImpl() = 0;
+
+	protected:
+		std::vector<std::byte> nextBuffer()
 		{
 			std::vector<char> buffer;
 			buffer.reserve(BUFFER_SIZE);
-			istream.read(buffer.data(), BUFFER_SIZE);
-			std::vector<std::byte> bytes;
-			bytes.reserve(istream.gcount());
-			for (size_t i = 0; i < bytes.size(); ++i) bytes[i] = static_cast<std::byte>(buffer[i]);
-			return bytes;
+			std::streamsize countRead = 0;
+
+			while (countRead < BUFFER_SIZE)
+			{
+				if (_istreamPtr->fail())
+				{
+					std::string error{ "error reading file " };
+					error.append(_filenames[_curIndex]);
+					throw new std::runtime_error(error);
+				}
+
+				if (_istreamPtr->eof())
+				{
+					if (++_curIndex == _filenames.size())
+					{
+						_eof = true;
+						return convertToBytes(buffer);
+					}
+
+					_istreamPtr.reset(new std::ifstream(_filenames[_curIndex], std::ios::binary));
+				}
+
+				_istreamPtr->read(buffer.data() + countRead, BUFFER_SIZE - countRead);
+				countRead += _istreamPtr->gcount();
+			}
+
+			return convertToBytes(buffer);
 		}
 
-		std::istream istream;
+		size_t _curIndex;
+		bool _eof;
+		std::vector<std::string> _filenames;
+		std::unique_ptr<std::istream> _istreamPtr;
 		static constexpr unsigned int BUFFER_SIZE = 1000000;
+
+	private:
+		std::vector<std::byte> convertToBytes(const std::vector<char>& v)
+		{
+			std::vector<std::byte> bytes;
+			bytes.reserve(v.size());
+			return bytes;
+		}
 	};
 }
