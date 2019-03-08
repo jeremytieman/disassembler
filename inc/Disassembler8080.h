@@ -8,6 +8,9 @@ namespace CodexMachina
 	{
 	public:
 		Disassembler8080() { }
-		void disassembleImpl();
+		void disassembleImpl(std::ostream& ostream) override;
+	private:
+		constexpr static std::size_t _addressBusSize{ 16 };
+		constexpr static std::size_t _maxOperationSize{ 3 };
 	};
 }

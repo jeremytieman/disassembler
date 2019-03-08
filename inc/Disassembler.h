@@ -16,9 +16,9 @@ namespace CodexMachina
 	public:
 		Disassembler() { }
 
-		void disassemble(const std::vector<std::string>& filenames)
+		void disassemble(const std::vector<std::string>& inputFilenames, const std::string& outputFilename)
 		{
-			for (const auto& filename : filenames)
+			for (const auto& filename : inputFilenames)
 			{
 				if (!std::filesystem::exists(filename))
 				{
@@ -28,28 +28,36 @@ namespace CodexMachina
 				}
 			}
 
+			if (std::filesystem::exists(outputFilename))
+			{
+				std::string error(outputFilename);
+				error.append(" already exists");
+				throw new std::invalid_argument(error);
+			}
+
 			_curIndex = 0;
 			_eof = false;
-			_filenames = filenames;
+			_filenames = inputFilenames;
 			std::unique_ptr<std::istream> istreamPtr(new std::ifstream(_filenames[_curIndex], std::ios::binary));
-			disassemble(istreamPtr);
+			std::ofstream ostream{ outputFilename };
+			disassemble(istreamPtr, ostream);
 		}
 		
-		void disassemble(std::unique_ptr<std::istream>& istreamPtr)
+		void disassemble(std::unique_ptr<std::istream>& istreamPtr, std::ostream& ostream)
 		{
 			_istreamPtr = std::move(istreamPtr);
 		}
 
-		virtual void disassembleImpl() = 0;
+		virtual void disassembleImpl(std::ostream& ostream) = 0;
 
 	protected:
-		std::vector<std::byte> nextBuffer()
+		std::vector<unsigned char> nextBuffer()
 		{
 			std::vector<char> buffer;
-			buffer.reserve(BUFFER_SIZE);
+			buffer.reserve(_bufferSize);
 			std::streamsize countRead = 0;
 
-			while (countRead < BUFFER_SIZE)
+			while (countRead < _bufferSize)
 			{
 				if (_istreamPtr->fail())
 				{
@@ -63,30 +71,39 @@ namespace CodexMachina
 					if (++_curIndex == _filenames.size())
 					{
 						_eof = true;
-						return convertToBytes(buffer);
+						return convertToUnsigned(buffer);
 					}
 
 					_istreamPtr.reset(new std::ifstream(_filenames[_curIndex], std::ios::binary));
 				}
 
-				_istreamPtr->read(buffer.data() + countRead, BUFFER_SIZE - countRead);
+				_istreamPtr->read(buffer.data() + countRead, _bufferSize - countRead);
 				countRead += _istreamPtr->gcount();
 			}
 
-			return convertToBytes(buffer);
+			return convertToUnsigned(buffer);
+		}
+
+		std::size_t addressPrintingWidth(std::size_t addressBusSize)
+		{
+			std::size_t result = 0;
+			auto memorySize = 1 << addressBusSize;
+			while (memorySize > 16) memorySize /= 16;
+			return result;
 		}
 
 		size_t _curIndex;
 		bool _eof;
 		std::vector<std::string> _filenames;
 		std::unique_ptr<std::istream> _istreamPtr;
-		static constexpr unsigned int BUFFER_SIZE = 1000000;
+		static constexpr unsigned int _bufferSize{ 1000000 };
 
 	private:
-		std::vector<std::byte> convertToBytes(const std::vector<char>& v)
+		std::vector<unsigned char> convertToUnsigned(const std::vector<char>& v)
 		{
-			std::vector<std::byte> bytes;
+			std::vector<unsigned char> bytes;
 			bytes.reserve(v.size());
+			for (const auto c : v) bytes.push_back(c);
 			return bytes;
 		}
 	};
