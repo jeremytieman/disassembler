@@ -11,100 +11,107 @@
 
 namespace CodexMachina
 {
-	class Disassembler
-	{
-	public:
-		Disassembler() { }
+  class Disassembler
+  {
+  public:
+    Disassembler() = default;
 
-		void disassemble(const std::vector<std::string>& inputFilenames, const std::string& outputFilename)
-		{
-			for (const auto& filename : inputFilenames)
-			{
-				if (!std::filesystem::exists(filename))
-				{
-					std::string error(filename);
-					error.append(" does not exist");
-					throw new std::invalid_argument(error);
-				}
-			}
+    void disassemble(const std::vector<std::string>& inputFilenames, const std::string& outputFilename, const bool verbose = false)
+    {
+      for (const auto& filename : inputFilenames)
+      {
+        if (!std::filesystem::exists(filename))
+        {
+          std::string error(filename);
+          error.append(" does not exist");
+          throw std::invalid_argument(error);
+        }
+      }
 
-			if (std::filesystem::exists(outputFilename))
-			{
-				std::string error(outputFilename);
-				error.append(" already exists");
-				throw new std::invalid_argument(error);
-			}
+      if (std::filesystem::exists(outputFilename))
+      {
+        std::string error(outputFilename);
+        error.append(" already exists");
+        throw std::invalid_argument(error);
+      }
 
-			_curIndex = 0;
-			_eof = false;
-			_filenames = inputFilenames;
-			std::unique_ptr<std::istream> istreamPtr(new std::ifstream(_filenames[_curIndex], std::ios::binary));
-			std::ofstream ostream{ outputFilename };
-			disassemble(istreamPtr, ostream);
-		}
-		
-		void disassemble(std::unique_ptr<std::istream>& istreamPtr, std::ostream& ostream)
-		{
-			_istreamPtr = std::move(istreamPtr);
-		}
+      _curIndex = 0;
+      _eof = false;
+      _filenames = inputFilenames;
+      std::unique_ptr<std::istream> istreamPtr = std::make_unique<std::ifstream>(_filenames[_curIndex], std::ios::binary);
+      std::ofstream ostream{ outputFilename };
+      disassemble(istreamPtr, ostream, verbose);
+    }
 
-		virtual void disassembleImpl(std::ostream& ostream) = 0;
+    void disassemble(std::unique_ptr<std::istream>& istreamPtr, std::ostream& ostream, const bool verbose = false)
+    {
+      _istreamPtr = std::move(istreamPtr);
+      disassembleImpl(ostream, verbose);
+    }
 
-	protected:
-		std::vector<unsigned char> nextBuffer()
-		{
-			std::vector<char> buffer;
-			buffer.reserve(_bufferSize);
-			std::streamsize countRead = 0;
+    virtual void disassembleImpl(std::ostream& ostream, bool verbose = false) = 0;
 
-			while (countRead < _bufferSize)
-			{
-				if (_istreamPtr->fail())
-				{
-					std::string error{ "error reading file " };
-					error.append(_filenames[_curIndex]);
-					throw new std::runtime_error(error);
-				}
+  protected:
+    std::vector<unsigned char> nextBuffer()
+    {
+      std::vector<char> buffer(_bufferSize);
+      std::streamsize countRead = 0;
 
-				if (_istreamPtr->eof())
-				{
-					if (++_curIndex == _filenames.size())
-					{
-						_eof = true;
-						return convertToUnsigned(buffer);
-					}
+      while (countRead < _bufferSize)
+      {
+        if (_istreamPtr->fail() && !_istreamPtr->eof())
+        {
+          std::string error{ "error reading file " };
+          error.append(_filenames[_curIndex]);
+          throw std::runtime_error(error);
+        }
 
-					_istreamPtr.reset(new std::ifstream(_filenames[_curIndex], std::ios::binary));
-				}
+        if (_istreamPtr->eof())
+        {
+          if (++_curIndex == _filenames.size())
+          {
+            _eof = true;
+            buffer.resize(countRead);
+            return convertToUnsigned(buffer);
+          }
 
-				_istreamPtr->read(buffer.data() + countRead, _bufferSize - countRead);
-				countRead += _istreamPtr->gcount();
-			}
+          _istreamPtr = std::make_unique<std::ifstream>(_filenames[_curIndex], std::ios::binary);
+        }
 
-			return convertToUnsigned(buffer);
-		}
+        _istreamPtr->read(&buffer[countRead], _bufferSize - countRead);
+        countRead += _istreamPtr->gcount();
+      }
 
-		std::size_t addressPrintingWidth(std::size_t addressBusSize)
-		{
-			std::size_t result = 0;
-			auto memorySize = 1 << addressBusSize;
-			while (memorySize > 16) memorySize /= 16;
-			return result;
-		}
+      return convertToUnsigned(buffer);
+    }
 
-		size_t _curIndex;
-		bool _eof;
-		std::vector<std::string> _filenames;
-		std::unique_ptr<std::istream> _istreamPtr;
-		static constexpr unsigned int _bufferSize{ 1000000 };
+    std::size_t addressPrintingWidth(std::size_t addressBusSize)
+    {
+      std::size_t result = 1;
+      auto memorySize = 1 << addressBusSize;
 
-	private:
-		std::vector<unsigned char> convertToUnsigned(const std::vector<char>& v)
-		{
-			std::vector<unsigned char> bytes;
-			bytes.reserve(v.size());
-			for (const auto c : v) bytes.push_back(c);
-			return bytes;
-		}
-	};
-}
+      while (memorySize > 16)
+      {
+        memorySize /= 16;
+        ++result;
+      }
+
+      return result;
+    }
+
+    size_t _curIndex = 0;
+    bool _eof = true;
+    std::vector<std::string> _filenames;
+    std::unique_ptr<std::istream> _istreamPtr;
+    static constexpr unsigned int _bufferSize{ 1000000 };
+
+  private:
+    std::vector<unsigned char> convertToUnsigned(const std::vector<char>& v)
+    {
+      std::vector<unsigned char> bytes;
+      bytes.reserve(v.size());
+      for (const auto c : v) { bytes.push_back(c); }
+      return bytes;
+    }
+  };
+} // namespace CodexMachina
