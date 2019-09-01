@@ -1,4 +1,4 @@
-#include <boost/program_options.hpp>
+#include <cxxopts.hpp>
 #include "Disassembler8080.h"
 #include <fstream>
 #include <iostream>
@@ -6,29 +6,25 @@
 #include <string>
 #include <vector>
 
-namespace po = boost::program_options;
-
 int main(int argc, char* argv[])
 {
   // Handle command line parameters
   std::vector<std::string> inputFileNames;
   std::string outputFileName;
-  po::options_description desc("Allowed options");
-  desc.add_options()
+  cxxopts::Options options(argv[0], "Allowed options");
+  options.add_options()
     ("help", "produce help message")
-    ("inputFile,i", po::value<std::vector<std::string>>(&inputFileNames)->required(), "file to be disassembled")
-    ("outputFile", po::value<std::string>(&outputFileName)->required(), "assembly output file")
+    ("i,inputFile", "file to be disassembled", cxxopts::value<std::vector<std::string>>(inputFileNames))
+    ("outputFile", "assembly output file", cxxopts::value<std::string>(outputFileName))
     ;
 
-  po::variables_map vm;
-  po::store(po::parse_command_line(argc, argv, desc), vm);
+  auto result = options.parse(argc, argv);
 
-  if (vm.count("help") != 0) {
-    std::cout << desc << "\n";
+  if (result.count("help"))
+  {
+    std::cout << options.help() << "\n";
     return 0;
   }
-
-  po::notify(vm);
 
   CodexMachina::Disassembler8080 d8080;
   d8080.disassemble(inputFileNames, outputFileName, true);
