@@ -14,8 +14,8 @@ int main(int argc, char* argv[])
   cxxopts::Options options(argv[0], "Allowed options");
   options.add_options()
     ("help", "produce help message")
-    ("i,inputFile", "file to be disassembled", cxxopts::value<std::vector<std::string>>(inputFileNames))
-    ("outputFile", "assembly output file", cxxopts::value<std::string>(outputFileName))
+    ("i,inputFiles", "file to be disassembled (required)", cxxopts::value<std::vector<std::string>>(inputFileNames))
+    ("outputFile", "assembly output file (required)", cxxopts::value<std::string>(outputFileName))
     ;
 
   auto result = options.parse(argc, argv);
@@ -23,6 +23,20 @@ int main(int argc, char* argv[])
   if (result.count("help"))
   {
     std::cout << options.help() << "\n";
+    return 0;
+  }
+
+  if (result.count("inputFiles") == 0)
+  {
+    std::cerr << "Missing input file(s)\n";
+    std::cerr << options.help() << "\n";
+    return 0;
+  }
+
+  if (result.count("outputFile") == 0)
+  {
+    std::cerr << "Missing output file\n";
+    std::cerr << options.help() << "\n";
     return 0;
   }
 
