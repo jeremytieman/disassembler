@@ -1,0 +1,5 @@
+cmake_minimum_required (VERSION 2.6)
+project (disassembler CXX)
+set (CMAKE_CXX_STANDARD 17)
+include_directories(inc/ external/cxxopts/include)
+add_executable(disassembler src/Main.cpp src/Disassembler8080.cpp)
