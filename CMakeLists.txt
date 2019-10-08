@@ -1,5 +1,5 @@
 cmake_minimum_required (VERSION 2.6)
-project (disassembler CXX)
+project (Disassembler CXX)
 set (CMAKE_CXX_STANDARD 17)
 
 # Download and unpack googletest at configure time
@@ -34,9 +34,11 @@ if (CMAKE_VERSION VERSION_LESS 2.8.11)
   include_directories("${gtest_SOURCE_DIR}/include")
 endif()
 
-include_directories(inc/ external/cxxopts/include)
-add_executable(disassembler src/Main.cpp src/Disassembler8080.cpp)
+set(HEADER_FILES inc/Disassembler.h inc/Disassembler8080.h)
+set(SOURCE_FILES src/Main.cpp src/Disassembler8080.cpp)
+add_executable(Disassembler ${SOURCE_FILES} ${HEADER_FILES})
+target_include_directories(Disassembler PUBLIC inc/ PUBLIC external/cxxopts/include/)
 
-add_executable(disassembler_test test/Main.cpp)
-target_link_libraries(disassembler_test gtest_main)
-add_test(NAME dis_test COMMAND disassembler_test)
+add_executable(DisassemblerTest test/Main.cpp)
+target_link_libraries(DisassemblerTest gtest_main)
+add_test(NAME DisTest COMMAND DisassemblerTest)
